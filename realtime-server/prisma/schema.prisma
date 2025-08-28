@@ -1,0 +1,18 @@
+// prisma/schema.prisma
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Example model (customize for your app)
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String
+  price     Decimal  @db.Decimal(10,2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
