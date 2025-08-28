@@ -112,7 +112,7 @@
         </tbody>
       </table>
 
-      <div class="empty" *ngIf="!rows?.length">
+      <div class="empty" *ngIf="!rows?.length && !loading">
         <p>No products yet.</p>
         <button class="btn btn--primary" (click)="openCreate()">Create your first product</button>
       </div>

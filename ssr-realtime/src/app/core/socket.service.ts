@@ -10,7 +10,7 @@ export class SocketService {
 
   constructor(@Inject(PLATFORM_ID) private pid: Object) {
     if (isPlatformBrowser(this.pid)) {
-      this.socket = io('http://localhost:4000', {
+      this.socket = io('http://localhost:3000', {
         path: '/socket.io',
         transports: ['websocket'],
         withCredentials: true,

@@ -1,3 +1,4 @@
+// server.js
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
@@ -7,86 +8,101 @@ import { PrismaClient } from "@prisma/client";
 const app = express();
 const prisma = new PrismaClient();
 
-app.use(
-  cors({
-    origin: "http://localhost:4200", // Angular SSR origin
-    credentials: true,
-  })
-);
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: { origin: true, credentials: true },
-});
+// ---- middlewares FIRST (order matters) ----
+app.use(cors({
+  origin: ["http://localhost:4200"], // Angular SSR dev
+  credentials: true,
+}));
+app.use(express.json()); // must be before routes
 
-app.use(express.json());
+// ---- in-memory cache for SSR ----
+  // <— the cache lives here (RAM)
+let productsCache = [];
 
-//GET LIST API
-app.get("/api/products", async (req, res) => {
-  const row = await prisma.product.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
+async function reloadProductsCache() {
+  productsCache = await prisma.product.findMany({
+    orderBy: { createdAt: "desc" }, // adjust if your column is different
   });
-  res.json(row);
+  // console.log("[cache] reloaded:", productsCache.length);
+}
+
+// expose cache for SSR (no DB hit)
+app.get("/api/products/cache", (_req, res) => {
+  res.json(productsCache ?? []);
 });
 
-//CREATE PRODUCTS API
+// normal list (DB read)
+app.get("/api/products", async (_req, res) => {
+  const rows = await prisma.product.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+  res.json(rows);
+});
+
+// --------------------------------- CRUD SOCKET IO -----------------------------
+// CREATE -> write DB, refresh cache once, broadcast
 app.post("/api/products", async (req, res) => {
-  const { name, price } = req.body;
-  if (!name || !price) {
+  const { name, price } = req.body ?? {};
+  if (!name || price == null) {
     return res.status(400).json({ error: "Name and price are required" });
   }
-  const row = await prisma.product.create({
-    data: { name, price },
-  });
-  io.emit("product:created", row);
-  res.status(201).json(row);
+  const created = await prisma.product.create({ data: { name, price } });
+  await reloadProductsCache();
+  io.emit("product:created", created);
+  res.status(201).json(created);
 });
 
-//UPDATE PRODUCTS API
+// UPDATE
 app.put("/api/products/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const { name, price } = req.body;
-  {
-  }
+  const { name, price } = req.body ?? {};
   const updated = await prisma.product.update({
     where: { id },
     data: { name, price },
   });
+  await reloadProductsCache();
   io.emit("product:updated", updated);
   res.json(updated);
 });
 
-//DELETE PRODUCTS API
+// DELETE
 app.delete("/api/products/:id", async (req, res) => {
   const id = Number(req.params.id);
-  const deleted = await prisma.product.delete({
-    where: { id },
-  });
+  const deleted = await prisma.product.delete({ where: { id } });
+  await reloadProductsCache();
   io.emit("product:deleted", deleted);
   res.json({ ok: true });
 });
 
-//PARA NICE ANG SHUTDOWN
+// ---- socket.io ----
+const server = http.createServer(app);
+const io = new Server(server, {
+  path: "/socket.io",
+  cors: { origin: ["http://localhost:4200"], credentials: true },
+});
+
+io.on("connection", (socket) => {
+  console.log("socket connected:", socket.id);
+  socket.emit("hello", { msg: "Welcome!" });
+
+  socket.on("ping", (data) => socket.emit("pong", { at: Date.now(), data }));
+  socket.on("disconnect", () => console.log("socket disconnected:", socket.id));
+});
+
+// graceful shutdown
 process.on("SIGINT", async () => {
   await prisma.$disconnect();
   process.exit(0);
 });
 
-// Example namespace/room-free broadcast
-io.on("connection", (socket) => {
-  console.log("socket connected:", socket.id);
-  socket.emit("hello", { msg: "Welcome!" });
-
-  socket.on("ping", (data) => {
-    // echo back
-    socket.emit("pong", { at: Date.now(), data });
-  });
-
-  socket.on("disconnect", () => {
-    console.log("socket disconnected:", socket.id);
-  });
+// ---- start server & warm cache once ----
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, async () => {
+  console.log(`API + Socket server on :${PORT}`);
+  try {
+    await reloadProductsCache(); // warm SSR cache on boot
+    console.log(`[cache] warmed with ${productsCache.length} products`);
+  } catch (e) {
+    console.error("Failed to warm cache:", e);
+  }
 });
-
-const PORT = process.env.PORT || 4000;
-server.listen(PORT, () => console.log(`Socket server on :${PORT}`));

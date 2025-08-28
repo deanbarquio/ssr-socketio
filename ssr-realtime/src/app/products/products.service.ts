@@ -14,8 +14,9 @@ export interface Product {
 }
 
 // While you're not behind Nginx yet:
-const API_BASE = 'http://localhost:4000'; // later: '' and call /api/...
+const API_BASE = 'http://localhost:3000'; // later: ''
 
+//Cache Store
 const CACHE_KEY = 'products_cache_v1';
 
 @Injectable({ providedIn: 'root' })
