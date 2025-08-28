@@ -1,0 +1,23 @@
+<header class="site-header" role="banner">
+  <div class="wrap">
+    <a class="brand" routerLink="/">SSR + Socket.IO Demo</a>
+    <nav class="nav">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"
+        >Home</a
+      >
+      <a routerLink="/about" routerLinkActive="active">About</a>
+      <a routerLink="/products" routerLinkActive="active">Products</a>
+    </nav>
+  </div>
+</header>
+
+<main class="site-main" role="main">
+  <!-- Routed pages render here -->
+  <router-outlet></router-outlet>
+</main>
+
+<footer class="site-footer" role="contentinfo">
+  <div class="wrap">
+    <small>© {{ currentYear }} Dean Marky</small>
+  </div>
+</footer>

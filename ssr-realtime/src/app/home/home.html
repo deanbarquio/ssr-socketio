@@ -1,0 +1,67 @@
+<section class="page">
+  <header class="page__header">
+    <div class="title">
+      <h1>Welcome</h1>
+      <p class="muted">Realtime SSR demo • Angular + Socket.IO + MySQL</p>
+    </div>
+    <div class="actions">
+      <button class="btn" (click)="ping()">Ping server</button>
+      <span class="status" [class.ok]="s.connected()" [class.bad]="!s.connected()">
+        {{ s.connected() ? 'Online' : 'Offline' }}
+      </span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card hero">
+      <h3>Quick add product</h3>
+      <form class="quick" (ngSubmit)="add()">
+        <label class="field">
+          <span>Name</span>
+          <input [(ngModel)]="name" name="name" placeholder="Awesome item" />
+        </label>
+        <label class="field">
+          <span>Price</span>
+          <input [(ngModel)]="price" name="price" type="number" step="0.01" placeholder="0.00" />
+        </label>
+        <button type="submit" class="btn btn--primary">Add</button>
+      </form>
+      <a routerLink="/products" class="link">Go to products →</a>
+    </div>
+
+    <div class="card list">
+      <div class="list__header">
+        <h3>Recent products</h3>
+        <a routerLink="/products" class="btn btn--ghost">View all</a>
+      </div>
+      <div class="table-wrap" *ngIf="p.list$ | async as rows; else loading">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th class="right">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of rows | slice : 0 : 5">
+              <td>{{ row.id }}</td>
+              <td class="name">{{ row.name }}</td>
+              <td class="right">{{ row.price | currency : 'PHP' : 'symbol' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="empty" *ngIf="!rows?.length">
+          <p>No products yet.</p>
+        </div>
+      </div>
+      <ng-template #loading>
+        <div class="skeleton">
+          <div class="line"></div>
+          <div class="line"></div>
+          <div class="line short"></div>
+        </div>
+      </ng-template>
+    </div>
+  </div>
+</section>

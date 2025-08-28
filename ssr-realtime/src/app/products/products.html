@@ -1,0 +1,165 @@
+<section class="page">
+  <header class="page__header">
+    <div class="title">
+      <h1>Products</h1>
+      <p class="muted">Cache-first list • Refresh only on Socket.IO CRUD events</p>
+    </div>
+
+    <div class="actions">
+      <div class="search">
+        <input
+          type="search"
+          placeholder="Search by name / id / price…"
+          [value]="search()"
+          (input)="onSearchInput($event)"
+        />
+        <span class="kbd">/</span>
+      </div>
+      <button class="btn btn--primary" (click)="openCreate()">+ Add Product</button>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="table-wrap" *ngIf="p.list$ | async as rows; else loading">
+      <table class="table">
+        <thead>
+          <tr>
+            <th
+              scope="col"
+              tabindex="0"
+              (click)="setSort('id')"
+              (keydown.enter)="setSort('id')"
+              (keydown.space)="setSort('id')"
+              [attr.aria-sort]="
+                sortKey() === 'id' ? (sortDir() === 'asc' ? 'ascending' : 'descending') : 'none'
+              "
+              [class.sorted]="sortKey() === 'id'"
+            >
+              ID
+              <span class="sort" *ngIf="sortKey() === 'id'">{{
+                sortDir() === 'asc' ? '▲' : '▼'
+              }}</span>
+            </th>
+            <th
+              scope="col"
+              tabindex="0"
+              (click)="setSort('name')"
+              (keydown.enter)="setSort('name')"
+              (keydown.space)="setSort('name')"
+              [attr.aria-sort]="
+                sortKey() === 'name' ? (sortDir() === 'asc' ? 'ascending' : 'descending') : 'none'
+              "
+              [class.sorted]="sortKey() === 'name'"
+            >
+              Name
+              <span class="sort" *ngIf="sortKey() === 'name'">{{
+                sortDir() === 'asc' ? '▲' : '▼'
+              }}</span>
+            </th>
+            <th
+              scope="col"
+              class="right"
+              tabindex="0"
+              (click)="setSort('price')"
+              (keydown.enter)="setSort('price')"
+              (keydown.space)="setSort('price')"
+              [attr.aria-sort]="
+                sortKey() === 'price' ? (sortDir() === 'asc' ? 'ascending' : 'descending') : 'none'
+              "
+              [class.sorted]="sortKey() === 'price'"
+            >
+              Price
+              <span class="sort" *ngIf="sortKey() === 'price'">{{
+                sortDir() === 'asc' ? '▲' : '▼'
+              }}</span>
+            </th>
+            <th
+              class="hide-sm"
+              scope="col"
+              tabindex="0"
+              (click)="setSort('createdAt')"
+              (keydown.enter)="setSort('createdAt')"
+              (keydown.space)="setSort('createdAt')"
+              [attr.aria-sort]="
+                sortKey() === 'createdAt'
+                  ? sortDir() === 'asc'
+                    ? 'ascending'
+                    : 'descending'
+                  : 'none'
+              "
+              [class.sorted]="sortKey() === 'createdAt'"
+            >
+              Created
+              <span class="sort" *ngIf="sortKey() === 'createdAt'">{{
+                sortDir() === 'asc' ? '▲' : '▼'
+              }}</span>
+            </th>
+            <th class="right">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let row of filteredSorted(rows)">
+            <td>{{ row.id }}</td>
+            <td class="name">{{ row.name }}</td>
+            <td class="right">{{ row.price | currency : 'PHP' : 'symbol' }}</td>
+            <td class="hide-sm">{{ row.createdAt | date : 'medium' }}</td>
+            <td class="right">
+              <button class="btn btn--ghost" (click)="openEdit(row)">Edit</button>
+              <button class="btn btn--danger" (click)="remove(row)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="empty" *ngIf="!rows?.length">
+        <p>No products yet.</p>
+        <button class="btn btn--primary" (click)="openCreate()">Create your first product</button>
+      </div>
+    </div>
+
+    <ng-template #loading>
+      <div class="skeleton">
+        <div class="line"></div>
+        <div class="line"></div>
+        <div class="line short"></div>
+      </div>
+    </ng-template>
+  </div>
+</section>
+
+<!-- Modal -->
+<div class="modal" *ngIf="showForm()">
+  <div class="backdrop" (click)="closeForm()"></div>
+  <div class="dialog" role="dialog" aria-modal="true">
+    <header class="dialog__header">
+      <h3>{{ editing() ? 'Edit product' : 'Add product' }}</h3>
+      <button class="icon" aria-label="Close" (click)="closeForm()">✕</button>
+    </header>
+
+    <form class="dialog__body" (ngSubmit)="save()">
+      <label class="field">
+        <span>Name</span>
+        <input type="text" required [value]="form().name" (input)="onFormNameInput($event)" />
+      </label>
+
+      <label class="field">
+        <span>Price</span>
+        <input
+          type="number"
+          step="0.01"
+          required
+          [value]="form().price"
+          (input)="onFormPriceInput($event)"
+        />
+      </label>
+
+      <footer class="dialog__footer">
+        <button type="button" class="btn btn--ghost" (click)="closeForm()">Cancel</button>
+        <button type="submit" class="btn btn--primary">
+          {{ editing() ? 'Save changes' : 'Create' }}
+        </button>
+      </footer>
+    </form>
+  </div>
+</div>
